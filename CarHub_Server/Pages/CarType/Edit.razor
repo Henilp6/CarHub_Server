@@ -1,0 +1,93 @@
+﻿@page "/carType/edit/{id:int}"
+@using CarHub_Server.Helper;
+@inject ICarTypeService _carTypeService
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _jsRuntime
+@attribute [Authorize]
+
+
+<div class="row my-2">
+    <h3 class="card-title text-primary mb-3 ml-3">Update CarType</h3>
+
+    <div class="col-10">
+        @if (IsLoading)
+        {
+            <div class="text-center">
+                <img src="/images/loading.gif">
+            </div>
+        }
+        else
+        {
+            <EditForm Model="CarType" OnValidSubmit="CarTypeUpdate">
+                <DataAnnotationsValidator />
+                @*<ValidationSummary/>*@
+                <div class="form-group">
+                    <label>CarType Name</label>
+                    <InputText @bind-Value="CarType.TypeName" class="form-control"></InputText>
+                    <ValidationMessage For="()=>CarType.TypeName"></ValidationMessage>
+                </div>
+          
+                <div class="form-group py-2">
+                    <button class="btn btn-primary">Update</button>
+                    <NavLink href="carType" class="btn btn-secondary">Back to Index</NavLink>
+                </div>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code
+{
+    [Parameter]
+    public int Id { get; set; }
+
+    private CarTypeUpdateDTO CarType { get; set; } = new CarTypeUpdateDTO();
+    // private CountryDTO CountryDTO { get; set; } = new CountryDTO();
+    public bool IsLoading { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadCarType();
+        }
+    }
+    private async Task LoadCarType()
+    {
+        IsLoading = true;
+        StateHasChanged();
+        var response = await _carTypeService.GetAsync<APIResponse>(Id);
+        if (response != null && response.IsSuccess)
+        {
+            CarType = JsonConvert.DeserializeObject<CarTypeUpdateDTO>(Convert.ToString(response.Result));
+        }
+
+
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+
+    private async Task CarTypeUpdate()
+    {
+        var response = await _carTypeService.UpdateAsync<APIResponse>(CarType);
+        if (response != null && response.IsSuccess)
+        {
+            await _jsRuntime.ToastrSuccess("CarType Update sucessfully.");
+            _navigationManager.NavigateTo("carType");
+        }
+        else
+        {
+            if (response.ErrorMessages.Count > 0)
+            {
+                await _jsRuntime.ToastrError(response.ErrorMessages.FirstOrDefault());
+            }
+        }
+
+    }
+
+
+
+
+
+}

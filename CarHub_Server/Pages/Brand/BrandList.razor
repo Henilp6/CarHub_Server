@@ -1,0 +1,128 @@
+﻿@page "/brand"
+@using CarHub_Models.API;
+@using CarHub_Server.Helper;
+@using CarHub_Server.Service;
+@using Newtonsoft.Json;
+@inject IBrandService _brandService
+@inject IJSRuntime _jsRuntime
+@inject IJSRuntime _jsRuntime@inject NavigationManager _NavigationManager
+@* @using HelpingHands_Common
+ @attribute [Authorize(Roles = SD.Role_Admin)] *@
+<_DeleteConfirmation IsParentComponentProcessing="IsLoading" ConfirmationChanged="ConfirmDelete_Click"></_DeleteConfirmation><div class="container p-4 border">    <div class="row pb-2">        <div class="col">            <h4 class="text-primary">Brand List</h4>        </div>        <div class="col text-end pt-1">            <NavLink href="@($"brand/create")" class="btn-primary btn"><i class="bi bi-plus-square-fill"></i>Create Brand</NavLink>                   </div>    </div>    <div class="row pb-2">        <div class="row">            <span class="col-md-2">                <input @bind="term" id="SearchBox" class="form-control" placeholder="Search by name" />            </span>            <span class="col-md-2">                <button @onclick="Search" class="btn btn-primary">Search</button>            </span>        </div>    </div>    @if (brandIndexVM.Brands.Any())
+    {        <table class="table table-bordered table-striped">            <thead>                <tr>                    <th>
+                        <a @onclick="Pagination">Brand Name<i class="bi bi-arrow-down-up"></i></a>
+                    </th>
+                    
+                    <th>                        Is Active                    </th>                    <th></th>                </tr>            </thead>            <tbody>                @foreach (var item in brandIndexVM.Brands)
+                {                    <tr>                        <td>@item.BrandName</td>                        <td>@item.IsActive</td>                        <td>                            <NavLink href="@($"brand/edit/{item.Id}")" class="btn-primary btn"><i class="bi bi-pencil-square"></i>Edit</NavLink>                            <button class="btn btn-danger" @onclick="()=>HandleDelete(item.Id)"><i class="bi bi-trash"></i>Delete</button>                        </td>                    </tr>                }            </tbody>        </table>        <nav aria-label="Page navigation example">            <ul class="pagination">                @if (brandIndexVM.CurrentPage > 1)
+                {                    <li class="page-item">
+                        <a class="page-link" @onclick="() => HandlePageClick(brandIndexVM.Term, brandIndexVM.OrderBy, brandIndexVM.CurrentPage-1)" aria-label="Previous">
+
+                            <span aria-hidden="true">&laquo;</span>                        </a>                    </li>                }
+
+                @for (int i = 1; i <= brandIndexVM.TotalPages; i++)
+                {
+                    var page = i; // Capture the current value of i in a local variable for use inside the lambda expression
+                    if (i == brandIndexVM.CurrentPage)
+                    {                        <li class="page-item">
+                            <a class="page-link active bg-primary" style="color: white;" @onclick="() => HandlePageClick(brandIndexVM.Term, brandIndexVM.OrderBy, page)">@i</a>
+                        </li>                    }
+                    else
+                    {                        <li class="page-item">
+                            <a class="page-link" @onclick="() => HandlePageClick(brandIndexVM.Term, brandIndexVM.OrderBy, page)">@i</a>
+                        </li>                    }
+                }
+
+                @if (brandIndexVM.CurrentPage < brandIndexVM.TotalPages)
+                {                    <li class="page-item">
+                        <a class="page-link" @onclick="() => HandlePageClick(brandIndexVM.Term, brandIndexVM.OrderBy, brandIndexVM.CurrentPage+1)" aria-label="Next">
+
+                            <span aria-hidden="true">&raquo;</span>                        </a>                    </li>                }            </ul>        </nav>    }
+    else
+    {
+        if (IsLoading)
+        {
+            //loading gif            <div class="text-center">                <img src="/images/loading.gif">            </div>        }
+        else
+        {
+            //no records            <p>No recrods found.</p>        }
+    }</div>@code
+{
+    // private APIResponse APIResponse { get; set; } = new APIResponse();
+    private BrandIndexVM brandIndexVM { get; set; } = new BrandIndexVM();
+    public bool IsLoading { get; set; }
+    private int DeleteCountryId { get; set; } = 0;
+    private string term = "";
+    private string orderBy = "";
+    private int currentPage = 1;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadCategories(term, orderBy, currentPage);
+        }
+    }
+
+    private async Task LoadCategories(string term, string orderBy, int currentPage)
+    {
+        IsLoading = true;
+        StateHasChanged();
+        var response = await _brandService.AllDataAsync<APIResponse>(term, orderBy, currentPage);
+        if (response != null && response.IsSuccess)
+        {
+            brandIndexVM = JsonConvert.DeserializeObject<BrandIndexVM>(Convert.ToString(response.Result));
+        }
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    private void HandleDelete(int id)
+    {
+        DeleteCountryId = id;
+        _jsRuntime.InvokeVoidAsync("ShowDeleteConfirmationModal");
+    }
+
+    public async Task ConfirmDelete_Click(bool isConfirmed)
+    {
+        IsLoading = true;
+        if (isConfirmed && DeleteCountryId != 0)
+        {
+            try
+            {
+                var response = await _brandService.DeleteAsync<APIResponse>(DeleteCountryId);
+                if (response != null && response.IsSuccess)
+                {
+                    await _jsRuntime.ToastrSuccess("Data delete sucessfully.");
+                    await LoadCategories(term, orderBy, currentPage);
+                    await _jsRuntime.InvokeVoidAsync("HideDeleteConfirmationModal");
+                }
+            }
+            catch (Exception e)
+            {
+                await _jsRuntime.ToastrError(e.Message);
+                await LoadCategories(term, orderBy, currentPage);
+                await _jsRuntime.InvokeVoidAsync("HideDeleteConfirmationModal");
+            }
+
+        }
+        IsLoading = false;
+    }
+
+    private async Task HandlePageClick(string term, string orderBy, int currentPage)
+    {
+        this.term = term;
+        this.orderBy = orderBy;
+        this.currentPage = currentPage;
+        await LoadCategories(term, orderBy, currentPage);
+    }
+    private async Task Search()
+    {
+        this.currentPage = 1;
+        await LoadCategories(term, orderBy, currentPage);
+    }
+    private async Task Pagination()
+    {
+        this.orderBy = brandIndexVM.NameSortOrder;
+        await LoadCategories(term, orderBy, currentPage);
+    }}
