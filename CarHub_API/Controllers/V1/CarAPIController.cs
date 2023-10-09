@@ -47,95 +47,63 @@ namespace CarHub_API.Controllers.v1
 		[ProducesResponseType(StatusCodes.Status403Forbidden)]
 		[ProducesResponseType(StatusCodes.Status401Unauthorized)]
 		[ProducesResponseType(StatusCodes.Status200OK)]
-		public async Task<ActionResult<APIResponse>> GetDataIndex(string term, string orderBy, int currentPage = 1)
-		{
+        public async Task<ActionResult<APIResponse>> GetDataIndex(string term, string orderBy, int currentPage = 1)
+        {
+            try
+            {
+                term = string.IsNullOrEmpty(term) ? "" : term.ToLower();
 
-			try
-			{
+                CarIndexVM carIndexVM = new CarIndexVM();
+                IEnumerable<Car> list = await _unitOfWork.Car.GetAllAsync(includeProperties: "Brand,CarType");
 
-				term = string.IsNullOrEmpty(term) ? "" : term.ToLower();
+                var List = _mapper.Map<List<CarDTO>>(list);
 
-				CarIndexVM carIndexVM = new CarIndexVM();
+                carIndexVM.NameSortOrder = string.IsNullOrEmpty(orderBy) ? "countryName_desc" : "";
 
-				{
-					var list = _db.Cars.Include("Brand").Include("CarType").ToList(); ;
-					carIndexVM.Cars = _mapper.Map<List<CarDTO>>(list);
-				}
-				carIndexVM.NameSortOrder = string.IsNullOrEmpty(orderBy) ? "typeName_desc" : "";
+                if (!string.IsNullOrEmpty(term))
+                {
+                    List = List.Where(u => u.Name.ToLower().Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    u.Brand.BrandName.ToLower().Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    u.CarType.TypeName.ToLower().Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
+                }
 
-				var cars = (from data in carIndexVM.Cars.ToList()
-							where term == "" ||
-							   data.Name.ToLower().
-							   Contains(term) || data.Brand.BrandImage.ToLower().
-							   Contains(term)
+                switch (orderBy)
+                {
+                    case "countryName_desc":
+                        List = List.OrderByDescending(a => a.Name).ToList();
+                        break;
 
+                    default:
+                        List = List.OrderBy(a => a.Name).ToList();
+                        break;
+                }
+                int totalRecords = List.Count();
+                int pageSize = 10;
+                int totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
+                List = List.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
+                // current=1, skip= (1-1=0), take=5 
+                // currentPage=2, skip (2-1)*5 = 5, take=5 ,
+                carIndexVM.Cars = List;
+                carIndexVM.CurrentPage = currentPage;
+                carIndexVM.TotalPages = totalPages;
+                carIndexVM.Term = term;
+                carIndexVM.PageSize = pageSize;
+                carIndexVM.OrderBy = orderBy;
 
-							select new CarDTO
-							{
-								Id = data.Id,
-								Name = data.Name,
+                _response.Result = _mapper.Map<CarIndexVM>(carIndexVM);
+                _response.StatusCode = HttpStatusCode.OK;
+                return Ok(_response);
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+            }
+            return _response;
+        }
 
-								Details = data.Details,
-
-								BrandId = data.BrandId,
-
-								Brand = data.Brand,
-
-								CarType = data.CarType,
-
-								CarTypeId = data.CarTypeId,
-								StartingPrice = data.StartingPrice,
-
-								EndPrice = data.EndPrice,
-
-								ManufacturingYear = data.ManufacturingYear,
-								IsActive = data.IsActive,
-
-								ImageURL = data.ImageURL,
-
-
-
-
-							});
-
-				switch (orderBy)
-				{
-					case "typeName_desc":
-						cars = cars.OrderByDescending(a => a.Name);
-						break;
-
-					default:
-						cars = cars.OrderBy(a => a.Name);
-						break;
-				}
-				int totalRecords = cars.Count();
-				int pageSize = 5;
-				int totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
-				cars = cars.Skip((currentPage - 1) * pageSize).Take(pageSize);
-				// current=1, skip= (1-1=0), take=5 
-				// currentPage=2, skip (2-1)*5 = 5, take=5 ,
-				carIndexVM.Cars = cars;
-				carIndexVM.CurrentPage = currentPage;
-				carIndexVM.TotalPages = totalPages;
-				carIndexVM.Term = term;
-				carIndexVM.PageSize = pageSize;
-				carIndexVM.OrderBy = orderBy;
-				// return View(stateIndexVM);
-
-				//  Response.Headers.Add("X-Pagination", JsonSerializer.Serialize(pagination));
-				_response.Result = _mapper.Map<CarIndexVM>(carIndexVM);
-				_response.StatusCode = HttpStatusCode.OK;
-				return Ok(_response);
-			}
-			catch (Exception ex)
-			{
-				_response.IsSuccess = false;
-				_response.ErrorMessages
-					 = new List<string>() { ex.ToString() };
-			}
-			return _response;
-
-		}
+      
 
 		[HttpGet(Name = "GetCarData")]
 		[ResponseCache(CacheProfileName = "Default30")]

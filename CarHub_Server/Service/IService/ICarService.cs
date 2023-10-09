@@ -5,13 +5,13 @@ namespace CarHub_Server.Service.IService
     public interface ICarService
     {
       
-            Task<T> GetAllAsync<T>(string token);
-            Task<T> GetAsync<T>(int id, string token);
-            Task<T> CreateAsync<T>(CarCreateDTO dto, string token);
-            Task<T> UpdateAsync<T>(CarUpdateDTO dto, string token);
-            Task<T> DeleteAsync<T>(int id, string token);
-        Task<T> CarSearchByLazyLoading<T>(int pageNum, string searchText, string token);
-		Task<T> AllDataAsync<T>(string term, string orderBy, int currentPage, string token);
+            Task<T> GetAllAsync<T>();
+            Task<T> GetAsync<T>(int id);
+            Task<T> CreateAsync<T>(CarCreateDTO dto);
+            Task<T> UpdateAsync<T>(CarUpdateDTO dto);
+            Task<T> DeleteAsync<T>(int id);
+        Task<T> CarSearchByLazyLoading<T>(int pageNum, string searchText);
+		Task<T> AllDataAsync<T>(string term, string orderBy, int currentPage);
 
 	}
 }

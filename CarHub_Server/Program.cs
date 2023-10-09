@@ -63,6 +63,11 @@ builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddHttpClient<IReviewXCommentService, ReviewXCommentService>();
 builder.Services.AddScoped<IReviewXCommentService, ReviewXCommentService>();
 
+builder.Services.AddHttpClient<IBrandUpload, BrandUpload>();
+builder.Services.AddScoped<IBrandUpload, BrandUpload>();
+builder.Services.AddHttpClient<ICarUpload, CarUpload>();
+builder.Services.AddScoped<ICarUpload, CarUpload>();
+
 builder.Services.AddDistributedMemoryCache();
 
 var app = builder.Build();

@@ -1,0 +1,213 @@
+﻿@page "/car"
+@using CarHub_Server.Helper;
+@inject ICarService _carService
+
+@inject IJSRuntime _jsRuntime
+@inject NavigationManager _navigationManager
+<_DeleteConfirmation IsParentComponentProcessing="IsLoading" ConfirmationChanged="ConfirmDelete_Click"></_DeleteConfirmation>
+<div class="container p-4 border">
+    <div class="row pb-2">
+        <div class="col">
+            <h4 class="text-primary">Car List</h4>
+        </div>
+        <div class="col text-end pt-1">
+            <NavLink href="@($"car/create")" class="btn-primary btn"><i class="bi bi-plus-square-fill"></i>Create Car</NavLink>
+
+        </div>
+    </div>
+
+
+    <div class="row pb-2">
+        <div class="row">
+            <span class="col-md-2">
+                <input @bind="term" id="SearchBox" class="form-control" placeholder="Search by name" />
+            </span>
+            <span class="col-md-2">
+                <button @onclick="Search" class="btn btn-primary">Search</button>
+            </span>
+        </div>
+    </div>
+
+    @if (carIndexVM.Cars.Any())
+    {
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>
+                        <a @onclick="Pagination">Car Name<i class="bi bi-arrow-down-up"></i></a>
+                    </th>
+                   
+                    <th>
+                        Brand Name
+                    </th> 
+                    <th>
+                        CarType Name
+                    </th>
+                    
+                    <th></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var item in carIndexVM.Cars)
+                {
+                    <tr>
+                        <td>@item.Name</td>
+                        <td>@item.Brand.BrandName</td>
+                        <td>@item.CarType.TypeName</td>
+                       
+
+                        <td>
+                            @*  <NavLink href="@($"country/update/{item.Id}")" class="btn-primary btn"><i class="bi bi-pencil-square"></i>Edit</NavLink> *@
+                            <NavLink href="@($"car/edit/{item.Id}")" class="btn-primary btn">Edit</NavLink>
+                            <button class="btn btn-danger" @onclick="()=>HandleDelete(item.Id)"><i class="bi bi-trash"></i>Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+
+
+        <nav aria-label="Page navigation example">
+            <ul class="pagination">
+
+                @if (carIndexVM.CurrentPage > 1)
+                {
+                    <li class="page-item">
+                        <a class="page-link" @onclick="() => HandlePageClick(carIndexVM.Term, carIndexVM.OrderBy, carIndexVM.CurrentPage-1)" aria-label="Previous">
+
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                }
+
+                @for (int i = 1; i <= carIndexVM.TotalPages; i++)
+                {
+                    var page = i; // Capture the current value of i in a local variable for use inside the lambda expression
+                    if (i == carIndexVM.CurrentPage)
+                    {
+                        <li class="page-item">
+                            <a class="page-link active bg-primary" style="color: white;" @onclick="() => HandlePageClick(carIndexVM.Term, carIndexVM.OrderBy, page)">@i</a>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="page-item">
+                            <a class="page-link" @onclick="() => HandlePageClick(carIndexVM.Term, carIndexVM.OrderBy, page)">@i</a>
+                        </li>
+                    }
+                }
+
+                @if (carIndexVM.CurrentPage < carIndexVM.TotalPages)
+                {
+                    <li class="page-item">
+                        <a class="page-link" @onclick="() => HandlePageClick(carIndexVM.Term, carIndexVM.OrderBy, carIndexVM.CurrentPage+1)" aria-label="Next">
+
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+    else
+    {
+        if (IsLoading)
+        {
+            //loading gif
+            <div class="text-center">
+                <img src="/images/loading.gif">
+            </div>
+        }
+        else
+        {
+            //no records
+            <p>No recrods found.</p>
+        }
+    }
+</div>
+
+
+
+@code
+{
+    // private APIResponse APIResponse { get; set; } = new APIResponse();
+    private CarIndexVM carIndexVM { get; set; } = new CarIndexVM();
+    public bool IsLoading { get; set; }
+    private int DeleteCarId { get; set; } = 0;
+    private string term = "";
+    private string orderBy = "";
+    private int currentPage = 1;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadCars(term, orderBy, currentPage);
+        }
+    }
+
+    private async Task LoadCars(string term, string orderBy, int currentPage)
+    {
+        IsLoading = true;
+        StateHasChanged();
+        var response = await _carService.AllDataAsync<APIResponse>(term, orderBy, currentPage);
+        if (response != null && response.IsSuccess)
+        {
+            carIndexVM = JsonConvert.DeserializeObject<CarIndexVM>(Convert.ToString(response.Result));
+        }
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    private void HandleDelete(int id)
+    {
+        DeleteCarId = id;
+        _jsRuntime.InvokeVoidAsync("ShowDeleteConfirmationModal");
+    }
+
+    public async Task ConfirmDelete_Click(bool isConfirmed)
+    {
+        IsLoading = true;
+        if (isConfirmed && DeleteCarId != 0)
+        {
+            try
+            {
+                var response = await _carService.DeleteAsync<APIResponse>(DeleteCarId);
+                if (response != null && response.IsSuccess)
+                {
+                    await _jsRuntime.ToastrSuccess("Data delete sucessfully.");
+                    await LoadCars(term, orderBy, currentPage);
+                    await _jsRuntime.InvokeVoidAsync("HideDeleteConfirmationModal");
+                }
+            }
+            catch (Exception e)
+            {
+                await _jsRuntime.ToastrError(e.Message);
+                await LoadCars(term, orderBy, currentPage);
+                await _jsRuntime.InvokeVoidAsync("HideDeleteConfirmationModal");
+            }
+
+        }
+        IsLoading = false;
+    }
+
+    private async Task HandlePageClick(string term, string orderBy, int currentPage)
+    {
+        this.term = term;
+        this.orderBy = orderBy;
+        this.currentPage = currentPage;
+        await LoadCars(term, orderBy, currentPage);
+    }
+    private async Task Search()
+    {
+        this.currentPage = 1;
+        await LoadCars(term, orderBy, currentPage);
+    }
+    private async Task Pagination()
+    {
+        this.orderBy = carIndexVM.NameSortOrder;
+        await LoadCars(term, orderBy, currentPage);
+    }
+}

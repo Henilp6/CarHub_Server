@@ -7,7 +7,7 @@ namespace CarHub_Server.Service.IService
     public interface ICarTypeService
     {
       
-            Task<T> GetAllAsync<T>(string token);
+            Task<T> GetAllAsync<T>();
             Task<T> GetAsync<T>(int id);
             Task<T> CreateAsync<T>(CarTypeCreateDTO dto);
             Task<T> UpdateAsync<T>(CarTypeUpdateDTO dto);

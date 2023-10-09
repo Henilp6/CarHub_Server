@@ -66,7 +66,7 @@ namespace CarHub_API.Controllers.v1
                                 select new CarSpecificationDTO
                                 {
                                     Id = data.Id,
-                                  Displacement = data.Displacement,
+                                   Displacement = data.Displacement,
                                     MaxPower = data.MaxPower,
                                     Cylinder = data.Cylinder,
                                     Length = data.Length,

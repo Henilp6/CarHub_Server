@@ -1,0 +1,196 @@
+﻿@page "/car/create"
+@using CarHub_Server.Helper;
+@inject ICarService _carService
+@inject IBrandService _brandService
+@inject ICarTypeService _carTypeService
+@inject ICarUpload _carUpload
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _jsRuntime
+@attribute [Authorize]
+
+<div class="row my-2">
+    <h3 class="card-title text-primary mb-3 ml-3">Create Car</h3>
+
+    <div class="col-10">
+        @if (IsLoading)
+        {
+            <div class="text-center">
+                <img src="/images/loading.gif">
+            </div>
+        }
+        else
+        {
+            <EditForm Model="Car" OnValidSubmit="CarCreate">
+                <DataAnnotationsValidator />
+                @*<ValidationSummary/>*@
+                <div class="form-group">
+                    <label>Car Name</label>
+                    <InputText @bind-Value="Car.Name" class="form-control"></InputText>
+                    <ValidationMessage For="()=>Car.Name"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>Details</label>
+                    <InputText @bind-Value="Car.Details" class="form-control"></InputText>
+                    <ValidationMessage For="()=>Car.Details"></ValidationMessage>
+                </div>
+               
+
+
+
+                <div class="form-group">
+                    <label>StartingPrice</label>
+                    <InputNumber @bind-Value="Car.StartingPrice" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>Car.StartingPrice"></ValidationMessage>
+                </div>
+
+                  <div class="form-group">
+                    <label>EndPrice</label>
+                    
+                    <InputNumber @bind-Value="Car.EndPrice" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>Car.EndPrice"></ValidationMessage>
+                </div>
+
+                  <div class="form-group">
+                    <label>ManufacturingYear</label>
+                    <InputNumber @bind-Value="Car.ManufacturingYear" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>Car.ManufacturingYear"></ValidationMessage>
+                </div>
+
+                <div class="form-group ">
+                    <div class="form-check">
+                        <InputCheckbox @bind-Value="Car.IsActive" class="form-check-input" checked></InputCheckbox>
+                        <label class="form-check-label">Is Active</label>
+                    </div>
+                </div>
+               
+                <div class="row pt-3">
+                
+
+                    <div class="form-group col-6">
+                        <label>Brand</label>
+                        <InputSelect @bind-Value="Car.BrandId" class="form-select">
+                            <option value="0" disabled="disabled" selected>--Select Brand--</option>
+                            @foreach (var brand in Brands)
+                            {
+                                <option value="@brand.Id">@brand.BrandName</option>
+                            }
+
+                        </InputSelect>
+                        <ValidationMessage For="()=>Car.BrandId"></ValidationMessage>
+                    </div>
+                    <div class="form-group col-6">
+                        <label>CarType</label>
+                        <InputSelect @bind-Value="Car.CarTypeId" class="form-select">
+                            <option value="0" disabled="disabled" selected>--Select CarType--</option>
+                            @foreach (var cartype in CarTypes)
+                            {
+                                <option value="@cartype.Id">@cartype.TypeName</option>
+                            }
+
+                        </InputSelect>
+                        <ValidationMessage For="()=>Car.CarTypeId"></ValidationMessage>
+                    </div>
+                   
+                    <div class="form-group pt-4 col-6">
+                        <InputFile OnChange="HandleImageUpload"></InputFile>
+                    </div>
+                </div>
+                       
+                <div class="form-group py-2">
+                    <button class="btn btn-primary">Create</button>
+                    <NavLink href="car" class="btn btn-secondary">Back to Index</NavLink>
+                </div>
+            </EditForm>
+        }
+    </div>
+    <div class="col-md-2">
+        <img src="@Car.ImageURL" class="w-100">
+    </div>
+</div>
+
+@code
+{
+    [Parameter]
+    public int Id { get; set; }
+
+    private CarCreateDTO Car { get; set; } = new CarCreateDTO();
+
+    private IEnumerable<BrandDTO> Brands { get; set; } = new List<BrandDTO>();
+
+    private IEnumerable<CarTypeDTO> CarTypes { get; set; } = new List<CarTypeDTO>();
+
+    public bool IsLoading { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadCategories();
+        }
+    }
+
+    private async Task LoadCategories()
+    {
+        IsLoading = true;
+        StateHasChanged();
+        var response = await _brandService.GetAllAsync<APIResponse>();
+        if (response != null && response.IsSuccess)
+        {
+            Brands = JsonConvert.DeserializeObject<List<BrandDTO>>(
+                       Convert.ToString(response.Result));
+            Brands = Brands.OrderBy(i => i.BrandName).ToList();
+        }
+        var response1 = await _carTypeService.GetAllAsync<APIResponse>();
+        if (response1 != null && response1.IsSuccess)
+        {
+            CarTypes = JsonConvert.DeserializeObject<List<CarTypeDTO>>(
+                       Convert.ToString(response1.Result));
+            CarTypes = CarTypes.OrderBy(i => i.TypeName).ToList();
+        }
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task CarCreate()
+    {
+        var response = await _carService.CreateAsync<APIResponse>(Car);
+        if (response != null && response.IsSuccess)
+        {
+            await _jsRuntime.ToastrSuccess("Car Create Sucessfully.");
+            _navigationManager.NavigateTo("car");
+        }
+
+        else
+        {
+            if (response.ErrorMessages.Count > 0)
+            {
+                await _jsRuntime.ToastrError(response.ErrorMessages.FirstOrDefault());
+            }
+        }
+
+    }
+
+
+    private async Task HandleImageUpload(InputFileChangeEventArgs e)
+    {
+        IsLoading = true;
+        try
+        {
+            if (e.GetMultipleFiles().Count > 0)
+            {
+                foreach (var file in e.GetMultipleFiles())
+                {
+                    System.IO.FileInfo fileInfo = new System.IO.FileInfo(file.Name);
+                   
+                        Car.ImageURL = await _carUpload.UploadFile(file);
+                    
+                }
+            }
+            IsLoading = false;
+        }
+        catch (Exception ex)
+        {
+            await _jsRuntime.ToastrError(ex.Message);
+        }
+    }
+}
