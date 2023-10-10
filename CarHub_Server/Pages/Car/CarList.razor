@@ -40,10 +40,17 @@
                     <th>
                         Brand Name
                     </th> 
-                    <th>
-                        CarType Name
+                     <th>
+                        CarSpecification
                     </th>
-                    
+                    <th>
+                        CarXColor
+                    </th>
+                    <th>
+                        
+                    </th>
+
+
                     <th></th>
                 </tr>
             </thead>
@@ -54,8 +61,10 @@
                     <tr>
                         <td>@item.Name</td>
                         <td>@item.Brand.BrandName</td>
-                        <td>@item.CarType.TypeName</td>
-                       
+                        <td> <NavLink href="@($"carSpecification/create/{item.Id}")" class="btn-primary btn">Add</NavLink></td>
+                        <td> <NavLink href="@($"carxcolor/create/{item.Id}")" class="btn-primary btn">Add</NavLink></td>
+
+
 
                         <td>
                             @*  <NavLink href="@($"country/update/{item.Id}")" class="btn-primary btn"><i class="bi bi-pencil-square"></i>Edit</NavLink> *@

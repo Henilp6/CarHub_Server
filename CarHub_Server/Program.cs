@@ -1,8 +1,10 @@
+using CarHub_Business.Mapper;
 using CarHub_Server.Data;
 using CarHub_Server.Service;
 using CarHub_Server.Service.IService;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +12,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
+
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+//builder.Services.AddAutoMapper(Assembly.Load("CarHub_Business"));
+//builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
@@ -69,6 +74,7 @@ builder.Services.AddHttpClient<ICarUpload, CarUpload>();
 builder.Services.AddScoped<ICarUpload, CarUpload>();
 
 builder.Services.AddDistributedMemoryCache();
+
 
 var app = builder.Build();
 

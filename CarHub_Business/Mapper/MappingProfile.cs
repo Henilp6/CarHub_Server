@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using CarHub_DataAccess;
 using CarHub_Models;
+using CarHub_Models.ViewModels;
 using Microsoft.AspNetCore.Identity;
 
 namespace CarHub_Business.Mapper
@@ -29,6 +30,9 @@ namespace CarHub_Business.Mapper
             CreateMap<Car, CarDTO>().ReverseMap();
             CreateMap<Car, CarCreateDTO>().ReverseMap();
             CreateMap<Car, CarUpdateDTO>().ReverseMap();
+
+        
+
 
             CreateMap<CarType, CarTypeDTO>().ReverseMap();
             CreateMap<CarType, CarTypeCreateDTO>().ReverseMap();
@@ -97,8 +101,6 @@ namespace CarHub_Business.Mapper
             CreateMap<Country, CountryDTO>().ReverseMap();
             CreateMap<Country, CountryCreateDTO>().ReverseMap();
             CreateMap<Country, CountryUpdateDTO>().ReverseMap();
-
-            
 
             CreateMap<State, StateDTO>().ReverseMap();
             CreateMap<State, StateCreateDTO>().ReverseMap();

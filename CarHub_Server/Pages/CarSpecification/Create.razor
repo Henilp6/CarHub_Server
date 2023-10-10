@@ -1,1 +1,207 @@
-﻿
+﻿@page "/carSpecification/create/{id:int}"
+@using CarHub_Server.Helper;
+@inject ICarService _carService
+@inject ICarSpecificationService _carSpecificationService
+@inject ICarTypeService _carTypeService
+@inject ICarUpload _carUpload
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _jsRuntime
+@inject IMapper _mapper
+@attribute [Authorize]
+
+<div class="row my-2">
+    <h3 class="card-title text-primary mb-3 ml-3">Create @Cars.Name Specification</h3>
+ 
+    <div class="col-10">
+        @if (IsLoading)
+        {
+            <div class="text-center">
+                <img src="/images/loading.gif">
+            </div>
+        }
+        else
+        {
+            <EditForm Model="CarSpecificationCreateVM" OnValidSubmit="CarSpecificationCreate">
+                <DataAnnotationsValidator />
+                @*<ValidationSummary/>*@
+
+                <input hidden asp-for="Car.Id" />
+                
+               @*  <InputText hidden="Cars.Id" ></InputText> *@
+                <div class="form-group">
+                    <label>Displacement</label>
+                    <InputText @bind-Value="CarSpecificationCreateVM.CarSpecification.Displacement" class="form-control"></InputText>
+                    <ValidationMessage For="()=>CarSpecificationCreateVM.CarSpecification.Displacement"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>Max Power</label>
+                    <InputText @bind-Value="CarSpecificationCreateVM.CarSpecification.MaxPower" class="form-control"></InputText>
+                    <ValidationMessage For="()=>CarSpecificationCreateVM.CarSpecification.MaxPower"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>Max Torque</label>
+                    <InputText @bind-Value="CarSpecificationCreateVM.CarSpecification.MaxTorque" class="form-control"></InputText>
+                    <ValidationMessage For="()=>CarSpecificationCreateVM.CarSpecification.MaxTorque"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>Cylinder</label>
+                    <InputNumber @bind-Value="CarSpecificationCreateVM.CarSpecification.Cylinder" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>CarSpecificationCreateVM.CarSpecification.Cylinder"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>FrontSuspension</label>
+                    <InputText @bind-Value="CarSpecificationCreateVM.CarSpecification.FrontSuspension" class="form-control"></InputText>
+                    <ValidationMessage For="()=>CarSpecificationCreateVM.CarSpecification.FrontSuspension"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>RearSuspension</label>
+                    <InputText @bind-Value="CarSpecificationCreateVM.CarSpecification.RearSuspension" class="form-control"></InputText>
+                    <ValidationMessage For="()=>CarSpecificationCreateVM.CarSpecification.RearSuspension"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>ShockAbsorbers</label>
+                    <InputText @bind-Value="CarSpecificationCreateVM.CarSpecification.ShockAbsorbers" class="form-control"></InputText>
+                    <ValidationMessage For="()=>CarSpecificationCreateVM.CarSpecification.ShockAbsorbers"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>AirbagNo</label>
+                    <InputText @bind-Value="CarSpecificationCreateVM.CarSpecification.AirbagNo" class="form-control"></InputText>
+                    <ValidationMessage For="()=>CarSpecificationCreateVM.CarSpecification.AirbagNo"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>Length</label>
+                    <InputNumber @bind-Value="CarSpecificationCreateVM.CarSpecification.Length" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>CarSpecificationCreateVM.CarSpecification.Length"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>Width</label>
+                    <InputNumber @bind-Value="CarSpecificationCreateVM.CarSpecification.Width" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>CarSpecificationCreateVM.CarSpecification.Width"></ValidationMessage>
+                </div>
+              
+                <div class="form-group">
+                    <label>Height</label>
+                    <InputNumber @bind-Value="CarSpecificationCreateVM.CarSpecification.Height" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>CarSpecificationDTO.Height"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>BootSpace</label>
+                    <InputNumber @bind-Value="CarSpecificationCreateVM.CarSpecification.BootSpace" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>CarSpecificationCreateVM.CarSpecification.BootSpace"></ValidationMessage>
+                </div>
+                 <div class="form-group">
+                    <label>SeatingCapacity</label>
+                    <InputNumber @bind-Value="CarSpecificationCreateVM.CarSpecification.SeatingCapacity" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>CarSpecificationCreateVM.CarSpecification.SeatingCapacity"></ValidationMessage>
+                </div>
+                 <div class="form-group">
+                    <label>WheelBase</label>
+                    <InputNumber @bind-Value="CarSpecificationCreateVM.CarSpecification.WheelBase" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>CarSpecificationCreateVM.CarSpecification.WheelBase"></ValidationMessage>
+                </div>
+            
+                <div class="form-group">
+                    <label>GearBox</label>
+                    <InputNumber @bind-Value="CarSpecificationCreateVM.CarSpecification.GearBox" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>CarSpecificationCreateVM.CarSpecification.GearBox"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>DriveType</label>
+                    <InputText @bind-Value="CarSpecificationCreateVM.CarSpecification.DriveType" class="form-control"></InputText>
+                    <ValidationMessage For="()=>CarSpecificationCreateVM.CarSpecification.DriveType"></ValidationMessage>
+                </div>
+
+                <div class="form-group py-2">
+                    <button class="btn btn-primary">Save</button>
+                    <NavLink href="car" class="btn btn-secondary">Back to Index</NavLink>
+                </div>
+            </EditForm>
+        }
+    </div>
+
+</div>
+
+@code
+{
+    [Parameter]
+    public int Id { get; set; }
+
+    private CarSpecificationCreateVM CarSpecificationCreateVM { get; set; } = new CarSpecificationCreateVM();
+
+    private CarCreateDTO Cars { get; set; } = new CarCreateDTO();
+    private CarSpecificationCreateDTO CarSpecificationDTO { get; set; } = new CarSpecificationCreateDTO();
+
+
+
+    public bool IsLoading { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadCategories();
+        }
+    }
+
+    private async Task LoadCategories()
+    {
+        IsLoading = true;
+        StateHasChanged();
+
+        // var response = await _carService.GetAsync<APIResponse>(Id);
+        // if (response != null && response.IsSuccess)
+        // {
+        //     Cars = JsonConvert.DeserializeObject<CarDTO>(Convert.ToString(response.Result));
+        // }
+
+        // var response1 = await _carSpecificationService.GetAsync<APIResponse>(Id);
+        // if (response1 != null && response1.IsSuccess)
+        // {
+        //     CarSpecificationDTO = JsonConvert.DeserializeObject<CarSpecificationDTO>(Convert.ToString(response1.Result));
+        // }
+        var response = await _carService.GetAsync<APIResponse>(Id);
+        if (response != null &&
+            response.IsSuccess)
+        {
+
+            Cars = JsonConvert.DeserializeObject<CarCreateDTO>(Convert.ToString(response.Result));
+            CarSpecificationCreateVM.Car = _mapper.Map<CarCreateDTO>(Cars);
+            // _mapper.Map<CarDTO, CarCreateDTO>(model);
+        }
+        var response1 = await _carSpecificationService.GetAsync<APIResponse>(Id);
+        if (response1 != null &&
+            response1.IsSuccess)
+        {
+
+            CarSpecificationDTO = JsonConvert.DeserializeObject<CarSpecificationCreateDTO>(Convert.ToString(response1.Result));
+             CarSpecificationCreateVM.CarSpecification = _mapper.Map<CarSpecificationCreateDTO>(CarSpecificationDTO);
+            //_mapper.Map<CarSpecificationDTO, CarSpecificationCreateVM>(model);
+        }
+
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task CarSpecificationCreate()
+    {
+
+        var response = await _carSpecificationService.CreateAsync<APIResponse>(CarSpecificationCreateVM);
+        if (response != null && response.IsSuccess)
+        {
+            await _jsRuntime.ToastrSuccess("CarSpecification Create Sucessfully.");
+            _navigationManager.NavigateTo("car");
+        }
+
+        else
+        {
+            if (response.ErrorMessages.Count > 0)
+            {
+                await _jsRuntime.ToastrError(response.ErrorMessages.FirstOrDefault());
+            }
+        }
+
+    }
+
+
+
+}

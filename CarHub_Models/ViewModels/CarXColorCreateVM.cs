@@ -11,7 +11,7 @@ namespace CarHub_Models.ViewModels
             Car = new CarCreateDTO();
         }
         public CarXColorCreateDTO CarXColor { get; set; }
-        public List<CarXColorCreateDTO> CarXColorlist { get; set; }
+        public List<CarXColorCreateDTO> CarXColorlist { get; set; } = new List<CarXColorCreateDTO>();
         public CarCreateDTO Car { get; set; }
         //      [ValidateNever]
         //public IEnumerable<SelectListItem> CarList { get; set; }
