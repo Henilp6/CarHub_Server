@@ -1,0 +1,146 @@
+﻿@page "/mileage/create/{id:int}"
+@using CarHub_Server.Helper;
+@inject ICarService _carService
+@inject IMileageService _mileageService
+@inject ICarTypeService _carTypeService
+@inject ICarUpload _carUpload
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _jsRuntime
+@inject IMapper _mapper
+@attribute [Authorize]
+
+<div class="row my-2">
+    <h3 class="card-title text-primary mb-3 ml-3">Create @Cars.Name Mileage</h3>
+ 
+    <div class="col-10">
+        @if (IsLoading)
+        {
+            <div class="text-center">
+                <img src="/images/loading.gif">
+            </div>
+        }
+        else
+        {
+            <EditForm Model="MileageCreateVM" OnValidSubmit="MileageCreate">
+                <DataAnnotationsValidator />
+                @*<ValidationSummary/>*@
+
+                
+                <input hidden asp-for="Car.Id" />
+                <input hidden asp-for="Car.Name" />
+                <input hidden asp-for="Car.StartingPrice" />
+                <input hidden asp-for="Car.EndPrice" />
+                <input hidden asp-for="Car.ManufacturingYear" />
+                
+               @*  <InputText hidden="Cars.Id" ></InputText> *@
+                <div class="form-group">
+                    <label>FuelType</label>
+                    <InputText @bind-Value="MileageCreateVM.Mileage.FuelType" class="form-control"></InputText>
+                    <ValidationMessage For="()=>MileageCreateVM.Mileage.FuelType"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>Transmission</label>
+                    <InputText @bind-Value="MileageCreateVM.Mileage.Transmission" class="form-control"></InputText>
+                    <ValidationMessage For="()=>MileageCreateVM.Mileage.Transmission"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>Average</label>
+                    <InputNumber @bind-Value="MileageCreateVM.Mileage.Average" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>MileageCreateVM.Mileage.Average"></ValidationMessage>
+                </div>
+                
+
+                <div class="form-group py-2">
+                    <button class="btn btn-primary">Save</button>
+                    <NavLink href="car" class="btn btn-secondary">Back to Index</NavLink>
+                </div>
+            </EditForm>
+        }
+    </div>
+
+</div>
+
+@code
+{
+    [Parameter]
+    public int Id { get; set; }
+
+    private MileageCreateVM MileageCreateVM { get; set; } = new MileageCreateVM();
+
+    private CarCreateDTO Cars { get; set; } = new CarCreateDTO();
+    private MileageCreateDTO MileageDTO { get; set; } = new MileageCreateDTO();
+
+
+
+    public bool IsLoading { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadCategories();
+        }
+    }
+
+    private async Task LoadCategories()
+    {
+        IsLoading = true;
+        StateHasChanged();
+
+        // var response = await _carService.GetAsync<APIResponse>(Id);
+        // if (response != null && response.IsSuccess)
+        // {
+        //     Cars = JsonConvert.DeserializeObject<CarDTO>(Convert.ToString(response.Result));
+        // }
+
+        // var response1 = await _mileageService.GetAsync<APIResponse>(Id);
+        // if (response1 != null && response1.IsSuccess)
+        // {
+        //     MileageDTO = JsonConvert.DeserializeObject<MileageDTO>(Convert.ToString(response1.Result));
+        // }
+        var response = await _carService.GetAsync<APIResponse>(Id);
+        if (response != null &&
+            response.IsSuccess)
+        {
+
+            Cars = JsonConvert.DeserializeObject<CarCreateDTO>(Convert.ToString(response.Result));
+            MileageCreateVM.Car = _mapper.Map<CarCreateDTO>(Cars);
+            // _mapper.Map<CarDTO, CarCreateDTO>(model);
+        }
+        var response1 = await _mileageService.GetAsync<APIResponse>(Id);
+        if (response1 != null &&
+            response1.IsSuccess)
+        {
+
+            MileageDTO = JsonConvert.DeserializeObject<MileageCreateDTO>(Convert.ToString(response1.Result));
+             MileageCreateVM.Mileage = _mapper.Map<MileageCreateDTO>(MileageDTO);
+            //_mapper.Map<MileageDTO, MileageCreateVM>(model);
+        }
+
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task MileageCreate()
+    {
+
+        var response = await _mileageService.CreateAsync<APIResponse>(MileageCreateVM);
+        if (response != null && response.IsSuccess)
+        {
+            await _jsRuntime.ToastrSuccess("Mileage Create Sucessfully.");
+            _navigationManager.NavigateTo("car");
+        }
+
+        else
+        {
+            if (response.ErrorMessages.Count > 0)
+            {
+                await _jsRuntime.ToastrError(response.ErrorMessages.FirstOrDefault());
+            }
+        }
+
+    }
+
+
+
+}

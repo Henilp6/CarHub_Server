@@ -42,76 +42,63 @@ namespace CarHub_API.Controllers.v1
 		public async Task<ActionResult<APIResponse>> GetFeatureData(string term, string orderBy, int currentPage = 1)
 		{
 
-			try
-			{
+            try
+            {
+                term = string.IsNullOrEmpty(term) ? "" : term.ToLower();
 
-				term = string.IsNullOrEmpty(term) ? "" : term.ToLower();
+                FeatureIndexVM carIndexVM = new FeatureIndexVM();
+                IEnumerable<Feature> list = await _unitOfWork.Feature.GetAllAsync(includeProperties: "FeatureType");
 
-				FeatureIndexVM featureIndexVM = new FeatureIndexVM();
+                var List = _mapper.Map<List<FeatureDTO>>(list);
 
-				{
-					var list = _db.Features.ToList();
-					featureIndexVM.Features = _mapper.Map<List<FeatureDTO>>(list);
-				}
-				featureIndexVM.NameSortOrder = string.IsNullOrEmpty(orderBy) ? "typeName_desc" : "";
+                carIndexVM.NameSortOrder = string.IsNullOrEmpty(orderBy) ? "countryName_desc" : "";
 
-				var features = (from data in featureIndexVM.Features.ToList()
-								where term == "" ||
-								   data.Name.ToLower().
-								   Contains(term)
+                if (!string.IsNullOrEmpty(term))
+                {
+                    List = List.Where(u => u.Name.ToLower().Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    u.FeatureType.FeatureTypeName.ToLower().Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
+                }
 
+                switch (orderBy)
+                {
+                    case "countryName_desc":
+                        List = List.OrderByDescending(a => a.Name).ToList();
+                        break;
 
-								select new FeatureDTO
-								{
-									Id = data.Id,
-									Name = data.Name,
+                    default:
+                        List = List.OrderBy(a => a.Name).ToList();
+                        break;
+                }
+                int totalRecords = List.Count();
+                int pageSize = 10;
+                int totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
+                List = List.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
+                // current=1, skip= (1-1=0), take=5 
+                // currentPage=2, skip (2-1)*5 = 5, take=5 ,
+                carIndexVM.Features = List;
+                carIndexVM.CurrentPage = currentPage;
+                carIndexVM.TotalPages = totalPages;
+                carIndexVM.Term = term;
+                carIndexVM.PageSize = pageSize;
+                carIndexVM.OrderBy = orderBy;
 
-
-								});
-
-				switch (orderBy)
-				{
-					case "typeName_desc":
-						features = features.OrderByDescending(a => a.Name);
-						break;
-
-					default:
-						features = features.OrderBy(a => a.Name);
-						break;
-				}
-				int totalRecords = features.Count();
-				int pageSize = 5;
-				int totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
-				features = features.Skip((currentPage - 1) * pageSize).Take(pageSize);
-				// current=1, skip= (1-1=0), take=5 
-				// currentPage=2, skip (2-1)*5 = 5, take=5 ,
-				featureIndexVM.Features = features;
-				featureIndexVM.CurrentPage = currentPage;
-				featureIndexVM.TotalPages = totalPages;
-				featureIndexVM.Term = term;
-				featureIndexVM.PageSize = pageSize;
-				featureIndexVM.OrderBy = orderBy;
-				// return View(stateIndexVM);
-
-				//  Response.Headers.Add("X-Pagination", JsonSerializer.Serialize(pagination));
-				_response.Result = _mapper.Map<FeatureIndexVM>(featureIndexVM);
-				_response.StatusCode = HttpStatusCode.OK;
-				return Ok(_response);
-			}
-			catch (Exception ex)
-			{
-				_response.IsSuccess = false;
-				_response.ErrorMessages
-					 = new List<string>() { ex.ToString() };
-			}
-			return _response;
-
-		}
+                _response.Result = _mapper.Map<FeatureIndexVM>(carIndexVM);
+                _response.StatusCode = HttpStatusCode.OK;
+                return Ok(_response);
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+            }
+            return _response;
+        }
 
 
 
 
-		[HttpGet(Name = "GetFeatures")]
+        [HttpGet(Name = "GetFeatures")]
 		[MapToApiVersion("1.0")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<APIResponse>> GetFeatures()

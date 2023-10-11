@@ -1,0 +1,145 @@
+﻿@page "/carxcolor/create/{id:int}"
+@using CarHub_Server.Helper;
+@inject ICarService _carService
+@inject ICarXColorService _carXColorService
+@inject IColorService _colorService
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _jsRuntime
+
+
+<div class="row my-2">
+    <h3 class="card-title text-primary mb-3 ml-3">Update Car</h3>
+
+    <div class="col-10">
+        @if (IsLoading)
+        {
+            <div class="text-center">
+                <img src="/images/loading.gif">
+            </div>
+        }
+        else
+        {
+            <EditForm Model="carXColorCreateVM" OnValidSubmit="CarXColorCreate">
+
+                <DataAnnotationsValidator />
+                <h4 class="text-primary">Add Color Of @Car.Name </h4>
+                <InputText hidden @bind-Value="carXColorCreateVM.Car.Name" class="form-control"></InputText>
+                <InputNumber hidden @bind-Value="carXColorCreateVM.Car.Id" class="form-control"></InputNumber>
+                <InputNumber hidden @bind-Value="Car.StartingPrice" class="form-control"></InputNumber>
+                <InputNumber hidden @bind-Value="Car.EndPrice" class="form-control"></InputNumber>
+                <InputNumber hidden @bind-Value="carXColorCreateVM.Car.ManufacturingYear" class="form-control"></InputNumber>
+                <div class="py-2 col-12">
+                   @* @for (int index = 0; index < carXColorCreateVM.Colorlist.Count(); index++)
+                    {
+                        var color = carXColorCreateVM.Colorlist[index];
+                        <div class="form-check">
+                            <InputCheckbox @bind-Value="color.IsChecked" class="form-check-input" />
+                            <label class="form-check-label">@color.ColorName</label>
+                            <input type="hidden" @bind="color.Id" />
+                            <input type="hidden" @bind="color.ColorName" />
+                        </div>
+                    }*@
+
+                    @for (int index = 0; index < carXColorCreateVM.Colorlist.Count(); index++)
+                    {
+                        var color = carXColorCreateVM.Colorlist[index];
+                        <div class="form-check">
+                            <InputCheckbox @bind-Value="color.IsChecked" class="form-check-input" />
+                            <label class="form-check-label">@color.ColorName</label>
+                            <input type="hidden" @bind="color.Id" />
+                            <input type="hidden" @bind="color.ColorName" />
+                        </div>
+                    }
+                </div>
+                <div class="form-group py-2">
+                    <button class="btn btn-primary">Create</button>
+                    <NavLink href="car" class="btn btn-secondary">Back to Index</NavLink>
+                </div>
+
+            </EditForm>
+        }
+    </div>
+
+</div>
+
+
+@code
+{
+    [Parameter]
+    public int Id { get; set; }
+
+    private CarCreateDTO Car { get; set; } = new CarCreateDTO();
+    private CarXColorCreateVM carXColorCreateVM { get; set; } = new CarXColorCreateVM();
+
+    // private CountryDTO CountryDTO { get; set; } = new CountryDTO();
+    public bool IsLoading { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadData();
+        }
+    }
+    private async Task LoadData()
+    {
+        IsLoading = true;
+        StateHasChanged();
+        var response = await _carService.GetAsync<APIResponse>(Id);
+        if (response != null && response.IsSuccess)
+        {
+            Car = JsonConvert.DeserializeObject<CarCreateDTO>(Convert.ToString(response.Result));
+        }
+        var colorxList = await _colorService.GetAllAsync<APIResponse>();
+        if (colorxList != null && colorxList.IsSuccess)
+        {
+            //carXColorCreateVM.Colorlist = JsonConvert.DeserializeObject<List<ColorVM>>
+            //          (Convert.ToString(colorxList.Result)).Select(i => new ColorVM
+            //              {
+            //                  ColorName = i.ColorName,
+            //                  Id = i.Id,
+            //                  IsChecked = carXColorCreateVM.CarXColorlist.Where(x => x.ColorId == i.Id && x.CarId == Car.Id).Any()
+
+            //              }).ToList();
+            carXColorCreateVM.Colorlist = JsonConvert.DeserializeObject<List<ColorVM>>
+               (Convert.ToString(colorxList.Result)).Select(i => new ColorVM
+                   {
+                       ColorName = i.ColorName,
+                       Id = i.Id,
+                       IsChecked = carXColorCreateVM.CarXColorlist.Where(x => x.ColorId == i.Id && x.CarId == Car.Id).Any()
+                   }).ToList();
+
+
+
+        }
+        carXColorCreateVM.Car = Car;
+
+
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+
+    private async Task CarXColorCreate()
+    {
+        var response = await _carXColorService.CreateAsync<APIResponse>(carXColorCreateVM);
+        if (response != null && response.IsSuccess)
+        {
+            await _jsRuntime.ToastrSuccess("CarXColor Create sucessfully.");
+            _navigationManager.NavigateTo("car");
+        }
+        else
+        {
+            if (response.ErrorMessages.Count > 0)
+            {
+                await _jsRuntime.ToastrError(response.ErrorMessages.FirstOrDefault());
+            }
+        }
+
+    }
+
+
+
+
+
+}

@@ -7,7 +7,7 @@ namespace CarHub_Models.ViewModels
 
         // public IQueryable<State> states { get; set; }
 
-        public IEnumerable<FeatureDTO> Features { get; set; }
+        public IEnumerable<FeatureDTO> Features { get; set; } = new List<FeatureDTO>();
         public string NameSortOrder { get; set; }
         // public string EmailSortOrder { get; set; }
         public int PageSize { get; set; }

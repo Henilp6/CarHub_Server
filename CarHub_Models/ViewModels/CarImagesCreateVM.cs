@@ -11,12 +11,13 @@ namespace CarHub_Models.ViewModels
 			CarImage = new CarImageCreateDTO();
 			Car = new CarCreateDTO();
 		}
-		public CarImageCreateDTO CarImage { get; set; }
+        [ValidateNever]
+        public CarImageCreateDTO CarImage { get; set; }
 	
 		public CarCreateDTO Car { get; set; }
 		//      [ValidateNever]
 		//public IEnumerable<SelectListItem> CarList { get; set; }
 		[ValidateNever]
-		public List<CarImageCreateDTO> CarImagelist { get; set; }
+		public List<CarImageCreateDTO> CarImagelist { get; set; } = new List<CarImageCreateDTO>();
 	}
 }

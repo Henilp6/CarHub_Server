@@ -1,0 +1,187 @@
+﻿@page "/brandIndex/{brandId:int}/"
+@inject ICarService _carService
+@inject ICarTypeService _carTypeService
+@inject IBrandService _brandService
+@inject ICarImageService _carImageService
+@inject IMileageService _mileageService
+@inject ICarSpecificationService _carSpecificationService
+@inject IReviewService _reviewService
+@inject IReviewXCommentService _reviewXCommentService
+@inject ICarSpecificationService _carSpecificationService
+@inject IFeatureXFeaturetypeService _featureXFeaturetypeService
+@inject IFeatureTypeService _featureTypeService
+@inject ICarXFeatureService _carXFeatureService
+
+
+
+
+
+
+@if (IsProcessing)
+{
+    <div style="position:fixed;top:50%;left:50%;margin-top:-50px;margin-left:-100px;">
+        <img src="images/ajax-loader.gif" />
+    </div>
+}
+else
+{
+<div class="container">
+
+
+     
+        <div class="row pb-3">
+            @foreach (var car in homeVM.CarList)
+            {
+
+
+                <div class="col-lg-3 col-sm-6 ">
+
+
+                    <div class="row p-2">
+                        <div class="col-12 p-1 h-100 ">
+
+                            <div class="card border-0 p-3 shadow  border-top border-5  rounded  ">
+
+                                <div>
+                                    @* <a href="@Url.Action("Details", "Home", new { carId = car.Id })"> *@
+                                    <img src="@car.ImageURL" class="card-img-top rounded" height="150px" width="150px" />
+
+                                    @* </a> *@
+                                </div>
+
+                                <div class="card-body pb-0">
+                                    <div>
+                                        @*<a href="@Url.Action("Details", "Home", new { carId = car.Id })">*@
+
+                                        <div class="pl-1">
+                                            <p class="card-title h5 text-dark opacity-75 text-uppercase text-center">
+
+                                                @car.Name @* @TruncateText(car.Name, 2)*@
+
+
+                                            </p>
+                                            <p class="card-title text-warning text-center">by <b>@car.Brand.BrandName</b></p>
+                                        </div>
+                                        <div class="pl-1">
+                                            <p class="text-dark text-opacity-75 text-center mb-0">
+                                                Starting Price:
+                                                <span>
+                                                    @car.StartingPrice.ToString("c")
+                                                </span>
+                                            </p>
+                                        </div>
+                                        <div class="pl-1">
+                                            <p class="text-dark text-opacity-75 text-center">
+                                                End Price:
+                                                <span>
+                                                    @car.EndPrice.ToString("c")
+                                                </span>
+                                            </p>
+                                        </div>
+                                        @* </a>*@
+                                    </div>
+                                </div>
+                                <div>
+                                   
+                                    <NavLink href="@($"details/{car.Id}")" class="btn btn-primary bg-gradient border-0 form-control">Details</NavLink>
+                                </div>
+
+
+
+
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+
+
+
+            }
+        </div>
+        
+   
+</div>
+}
+
+@code{
+    [Parameter]
+    public int carId { get; set; }
+    [Parameter]
+    public int featureTypeId { get; set; }
+    public bool IsProcessing { get; set; } = false;
+    public IEnumerable<CarDTO> Cars { get; set; } = new List<CarDTO>();
+    public IEnumerable<CarTypeDTO> CarTypes { get; set; } = new List<CarTypeDTO>();
+    public IEnumerable<BrandDTO> Brands { get; set; } = new List<BrandDTO>();
+    public IEnumerable<CarImageDTO> CarImages { get; set; } = new List<CarImageDTO>();
+    private HomeVM homeVM { get; set; } = new HomeVM();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsProcessing=true;
+
+        var featuretypelist = await _featureTypeService.GetAllAsync<APIResponse>();
+        if (featuretypelist != null && featuretypelist.IsSuccess)
+        {
+            homeVM.FeatureTypeList = JsonConvert.DeserializeObject<List<FeatureTypeDTO>>(Convert.ToString(featuretypelist.Result));
+        }
+        var cartypelist = await _carTypeService.GetAllAsync<APIResponse>();
+        if (cartypelist != null && cartypelist.IsSuccess)
+        {
+            homeVM.CarTypeList = JsonConvert.DeserializeObject<List<CarTypeDTO>>(Convert.ToString(cartypelist.Result));
+        }
+        var brandlist = await _brandService.GetAllAsync<APIResponse>();
+        if (brandlist != null && brandlist.IsSuccess)
+        {
+            homeVM.BrandList = JsonConvert.DeserializeObject<List<BrandDTO>>(Convert.ToString(brandlist.Result));
+        }
+        var carimagelist = await _carImageService.GetAllAsync<APIResponse>();
+        if (carimagelist != null && carimagelist.IsSuccess)
+        {
+            var carImagies = JsonConvert.DeserializeObject<List<CarImageDTO>>(Convert.ToString(carimagelist.Result));
+            homeVM.CarImagelist = carImagies.Where(x => x.Car.Id == carId).ToList();
+
+        }
+        var mileagelist = await _mileageService.GetAllAsync<APIResponse>();
+        if (mileagelist != null && mileagelist.IsSuccess)
+        {
+            var mileagel = JsonConvert.DeserializeObject<List<MileageDTO>>(Convert.ToString(mileagelist.Result));
+            homeVM.MileageList = mileagel.Where(x => x.CarId == carId).ToList();
+        }
+
+
+        var response = await _carService.GetAsync<APIResponse>(carId);
+        if (response != null && response.IsSuccess)
+        {
+            homeVM.Car = JsonConvert.DeserializeObject<CarDTO>(Convert.ToString(response.Result));
+
+        }
+        var carspeclist = await _carSpecificationService.GetAllAsync<APIResponse>();
+        if (carspeclist != null && carspeclist.IsSuccess)
+        {
+            var carspecl = JsonConvert.DeserializeObject<List<CarSpecificationDTO>>(Convert.ToString(carspeclist.Result));
+            homeVM.CarSpecificationList = carspecl.Where(x => x.CarId == carId).ToList();
+        }
+        var carXfeature = await _carXFeatureService.GetAllAsync<APIResponse>();
+        if (carXfeature != null && carXfeature.IsSuccess)
+        {
+            var carf = JsonConvert.DeserializeObject<List<CarXFeatureDTO>>(Convert.ToString(carXfeature.Result));
+            homeVM.CarXFeatureList = carf.Where(x => x.FeatureTypeId == featureTypeId &&
+             x.CarId == carId
+            ).ToList();
+        }
+        var featureXFeatureType = await _featureXFeaturetypeService.GetAllAsync<APIResponse>();
+        if (featureXFeatureType != null && featureXFeatureType.IsSuccess)
+        {
+            var carf = JsonConvert.DeserializeObject<List<FeatureXFeaturetypeDTO>>(Convert.ToString(featureXFeatureType.Result));
+            //homeVM.FeatureXFeaturetypeList = carf.Where(x => x.FeatureTypeId == featureTypeId
+            //).ToList();
+            homeVM.FeatureXFeaturetypeList = carf;
+        }
+
+
+        IsProcessing=false;
+    }
+}

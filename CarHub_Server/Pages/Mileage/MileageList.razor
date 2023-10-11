@@ -1,0 +1,218 @@
+﻿@page "/mileage"
+@using CarHub_Server.Helper;
+@inject ICarService _carService
+@inject IMileageService _mileageService
+
+@inject IJSRuntime _jsRuntime
+@inject NavigationManager _navigationManager
+<_DeleteConfirmation IsParentComponentProcessing="IsLoading" ConfirmationChanged="ConfirmDelete_Click"></_DeleteConfirmation>
+<div class="container p-4 border">
+    <div class="row pb-2">
+        <div class="col">
+            <h4 class="text-primary">Mileage List</h4>
+        </div>
+        <div class="col text-end pt-1">
+            <NavLink href="@($"mileage/create")" class="btn-primary btn"><i class="bi bi-plus-square-fill"></i>Create Mileage</NavLink>
+
+        </div>
+    </div>
+
+
+    <div class="row pb-2">
+        <div class="row">
+            <span class="col-md-2">
+                <input @bind="term" id="SearchBox" class="form-control" placeholder="Search by name" />
+            </span>
+            <span class="col-md-2">
+                <button @onclick="Search" class="btn btn-primary">Search</button>
+            </span>
+        </div>
+    </div>
+
+    @if (mileageIndexVM.Mileages.Any())
+    {
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>
+                        <a @onclick="Pagination">Car Name<i class="bi bi-arrow-down-up"></i></a>
+                    </th>
+                    <th>
+                        FuelType
+                    </th>
+                    <th>
+                        Transmission
+                    </th>
+                    <th>
+                        Mileage
+                    </th>
+                    
+                    <th></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var item in mileageIndexVM.Mileages)
+                {
+                    <tr>
+                        <td>@item.Car.Name</td>
+                        <td>@item.FuelType</td>
+                        <td>@item.Transmission</td>
+                        <td>@item.Average</td>
+                       
+
+                        
+                        <td>
+                            @*  <NavLink href="@($"country/update/{item.Id}")" class="btn-primary btn"><i class="bi bi-pencil-square"></i>Edit</NavLink> *@
+                            <NavLink href="@($"mileage/edit/{item.Id}")" class="btn-primary btn">Edit</NavLink>
+                            <button class="btn btn-danger" @onclick="()=>HandleDelete(item.Id)"><i class="bi bi-trash"></i>Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+
+
+        <nav aria-label="Page navigation example">
+            <ul class="pagination">
+
+                @if (mileageIndexVM.CurrentPage > 1)
+                {
+                    <li class="page-item">
+                        <a class="page-link" @onclick="() => HandlePageClick(mileageIndexVM.Term, mileageIndexVM.OrderBy, mileageIndexVM.CurrentPage-1)" aria-label="Previous">
+
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                }
+
+                @for (int i = 1; i <= mileageIndexVM.TotalPages; i++)
+                {
+                    var page = i; // Capture the current value of i in a local variable for use inside the lambda expression
+                    if (i == mileageIndexVM.CurrentPage)
+                    {
+                        <li class="page-item">
+                            <a class="page-link active bg-primary" style="color: white;" @onclick="() => HandlePageClick(mileageIndexVM.Term, mileageIndexVM.OrderBy, page)">@i</a>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="page-item">
+                            <a class="page-link" @onclick="() => HandlePageClick(mileageIndexVM.Term, mileageIndexVM.OrderBy, page)">@i</a>
+                        </li>
+                    }
+                }
+
+                @if (mileageIndexVM.CurrentPage < mileageIndexVM.TotalPages)
+                {
+                    <li class="page-item">
+                        <a class="page-link" @onclick="() => HandlePageClick(mileageIndexVM.Term, mileageIndexVM.OrderBy, mileageIndexVM.CurrentPage+1)" aria-label="Next">
+
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+    else
+    {
+        if (IsLoading)
+        {
+            //loading gif
+            <div class="text-center">
+                <img src="/images/loading.gif">
+            </div>
+        }
+        else
+        {
+            //no records
+            <p>No recrods found.</p>
+        }
+    }
+</div>
+
+
+
+@code
+{
+    // private APIResponse APIResponse { get; set; } = new APIResponse();
+    private MileageIndexVM mileageIndexVM { get; set; } = new MileageIndexVM();
+    public bool IsLoading { get; set; }
+    private int DeleteCarTypeId { get; set; } = 0;
+    private string term = "";
+    private string orderBy = "";
+    private int currentPage = 1;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadCarTypes(term, orderBy, currentPage);
+        }
+    }
+
+    private async Task LoadCarTypes(string term, string orderBy, int currentPage)
+    {
+        IsLoading = true;
+        StateHasChanged();
+        var response = await _mileageService.AllDataAsync<APIResponse>(term, orderBy, currentPage);
+        if (response != null && response.IsSuccess)
+        {
+            mileageIndexVM = JsonConvert.DeserializeObject<MileageIndexVM>(Convert.ToString(response.Result));
+        }
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    private void HandleDelete(int id)
+    {
+        DeleteCarTypeId = id;
+        _jsRuntime.InvokeVoidAsync("ShowDeleteConfirmationModal");
+    }
+
+    public async Task ConfirmDelete_Click(bool isConfirmed)
+    {
+        IsLoading = true;
+        if (isConfirmed && DeleteCarTypeId != 0)
+        {
+            try
+            {
+                var response = await _mileageService.DeleteAsync<APIResponse>(DeleteCarTypeId);
+                if (response != null && response.IsSuccess)
+                {
+                    await _jsRuntime.ToastrSuccess("Data delete sucessfully.");
+                    await LoadCarTypes(term, orderBy, currentPage);
+                    await _jsRuntime.InvokeVoidAsync("HideDeleteConfirmationModal");
+                }
+            }
+            catch (Exception e)
+            {
+                await _jsRuntime.ToastrError(e.Message);
+                await LoadCarTypes(term, orderBy, currentPage);
+                await _jsRuntime.InvokeVoidAsync("HideDeleteConfirmationModal");
+            }
+
+        }
+        IsLoading = false;
+    }
+
+    private async Task HandlePageClick(string term, string orderBy, int currentPage)
+    {
+        this.term = term;
+        this.orderBy = orderBy;
+        this.currentPage = currentPage;
+        await LoadCarTypes(term, orderBy, currentPage);
+    }
+    private async Task Search()
+    {
+        this.currentPage = 1;
+        await LoadCarTypes(term, orderBy, currentPage);
+    }
+    private async Task Pagination()
+    {
+        this.orderBy = mileageIndexVM.NameSortOrder;
+        await LoadCarTypes(term, orderBy, currentPage);
+    }
+}

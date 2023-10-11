@@ -1,0 +1,230 @@
+﻿@page "/carimage/create/{id:int}"
+@page "/carimage"
+@using CarHub_Server.Helper;
+@inject ICarService _carService
+@inject ICarImageService _carImageService
+@inject ICarUpload _carUpload
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _jsRuntime
+
+
+<div class="row my-2">
+    <h3 class="card-title text-primary mb-3 ml-3">Create @Cars.Name Images</h3>
+
+    <div class="col-10">
+        @if (IsLoading)
+        {
+            <div class="text-center">
+                <img src="/images/loading.gif">
+            </div>
+        }
+        else
+        {
+            <EditForm Model="carImagesCreateVM" OnValidSubmit="ImageCreate">
+                <DataAnnotationsValidator />
+                @*<ValidationSummary/>*@
+
+
+                <input hidden asp-for="Car.Id" />
+                <input hidden asp-for="Car.Name" />
+                <input hidden asp-for="Car.StartingPrice" />
+                <input hidden asp-for="Car.EndPrice" />
+                <input hidden asp-for="Car.ManufacturingYear" />
+
+                @*  <InputText hidden="Cars.Id" ></InputText> *@
+            
+                    <div class="form-floating py-2 col-12">
+                    <InputFile class="form-control border-0 shadow" multiple OnChange="HandleImageUpload" ></InputFile>
+                     
+                    </div>
+                
+                
+
+
+                <div class="form-group py-2">
+                    <button class="btn btn-primary">Save</button>
+                    <NavLink href="car" class="btn btn-secondary">Back to Index</NavLink>
+                </div>
+            </EditForm>
+        }
+    </div>
+    <div class="container">
+        <div class="row">
+            @if (list2 != null)
+            {
+                @foreach (var image in list2)
+                {
+                    <div class="col-md-2 col-sm-4 my-2 mt-3">
+                        <div class="text-center">
+                            <img src="@image.ImageUrl" width="100%"
+                                 style="border-radius:5px; border:1px solid #bbb9b9" />
+
+                            <div class="d-flex justify-content-evenly">
+                                <a asp-action="SetCarImage" class="btn btn-primary" asp-route-imageId="@image.Id" asp-route-carId="@image.CarId">
+                                    Set As Default
+                                </a>
+                                <button @onclick="()=>Increment(image.CarId , image.ImageUrl , image.Id)" type="submit">
+                                    <i class="bi bi-trash-fill"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+
+</div>
+
+@code
+{
+    [Parameter]
+    public int Id { get; set; }
+
+    private CarImagesCreateVM carImagesCreateVM { get; set; } = new CarImagesCreateVM();
+    List<CarImageDTO> list1 = new List<CarImageDTO>();
+    List<CarImageDTO> list2 = new List<CarImageDTO>();
+
+    private CarCreateDTO Cars { get; set; } = new CarCreateDTO();
+
+
+
+
+    public bool IsLoading { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadCategories();
+        }
+    }
+
+    private async Task LoadCategories()
+    {
+        IsLoading = true;
+        StateHasChanged();
+
+
+        var response = await _carService.GetAsync<APIResponse>(Id);
+        if (response != null &&
+            response.IsSuccess)
+        {
+
+
+            Cars = JsonConvert.DeserializeObject<CarCreateDTO>(Convert.ToString(response.Result));
+            carImagesCreateVM.Car = Cars;
+
+        }
+        var response1 = await _carImageService.GetAllAsync<APIResponse>();
+        if (response1 != null &&
+            response1.IsSuccess)
+        {
+
+            list1 = JsonConvert.DeserializeObject<List<CarImageDTO>>(Convert.ToString(response1.Result));
+            list2 = list1.Where(x => x.Car.Id == Id).ToList();
+
+
+        }
+
+
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task ImageCreate()
+    {
+
+        var response = await _carImageService.CreateAsync<APIResponse>(carImagesCreateVM);
+        if (response != null && response.IsSuccess)
+        {
+            await _jsRuntime.ToastrSuccess("Carimage Create Sucessfully.");
+          
+        }
+
+        else
+        {
+            if (response.ErrorMessages.Count > 0)
+            {
+                await _jsRuntime.ToastrError(response.ErrorMessages.FirstOrDefault());
+            }
+        }
+
+    }
+    private async Task HandleImageUpload(InputFileChangeEventArgs e)
+    {
+        IsLoading = true;
+        try
+        {
+            if (e.GetMultipleFiles().Count > 0)
+            {
+
+
+                foreach (var file in e.GetMultipleFiles())
+                {
+
+                    System.IO.FileInfo fileInfo = new System.IO.FileInfo(file.Name);
+                    CarImageCreateDTO carImageDTO = new CarImageCreateDTO();
+
+                    carImageDTO.CarId = carImagesCreateVM.Car.Id;
+                    carImageDTO.ImageUrl = await _carUpload.UploadFile(file);
+
+
+                    // Add the new DTO to the list
+                    carImagesCreateVM.CarImagelist.Add(carImageDTO);
+                }
+
+                // Call the API after processing all files
+                var response1 =  await _carImageService.CreateAsync<APIResponse>(carImagesCreateVM);
+                if (response1 != null && response1.IsSuccess)
+                {
+                    await _jsRuntime.ToastrSuccess("Carimage Add sucessfully.");
+                   
+                }
+            }
+            IsLoading = false;
+        }
+        catch (Exception ex)
+      {
+            await _jsRuntime.ToastrError(ex.Message);
+        }
+    }
+    private async Task Increment(int CarId, String ImageUrl , int id )
+    {
+        IsLoading = true;
+        CarImageDTO carImageDTO = new();
+
+        var imageToBeDeleted = await _carImageService.GetAsync<APIResponse>(id);
+        if (imageToBeDeleted != null && imageToBeDeleted.IsSuccess)
+        {
+            carImageDTO = JsonConvert.DeserializeObject<CarImageDTO>(Convert.ToString(imageToBeDeleted.Result));
+        }
+
+        if (carImageDTO != null)
+        {
+            //if (!string.IsNullOrEmpty(carImageDTO.ImageUrl))
+            //{
+            //    var oldImagePath =
+            //                   Path.Combine(_webHostEnvironment.WebRootPath,
+            //                   carImageDTO.ImageUrl.TrimStart('\\'));
+
+            //    if (System.IO.File.Exists(oldImagePath))
+            //    {
+            //        System.IO.File.Delete(oldImagePath);
+            //    }
+            //}
+            var response = await _carImageService.DeleteAsync<APIResponse>(carImageDTO.Id);
+            if (response != null && response.IsSuccess)
+            {
+                await _jsRuntime.ToastrSuccess("image Delete Sucessfully.");
+                // return RedirectToAction(nameof(IndexCompanyXAmenity));
+                _navigationManager.NavigateTo("carimage/create/{CarId}");
+            }
+        }
+       
+        IsLoading = false;
+    }
+
+
+}

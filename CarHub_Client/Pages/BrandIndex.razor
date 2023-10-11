@@ -1,0 +1,141 @@
+﻿@page "/brandIndex/{brandId:int}"
+@inject ICarService _carService
+@inject ICarTypeService _carTypeService
+@inject IBrandService _brandService
+@inject ICarImageService _carImageService
+
+
+
+
+
+
+@if (IsProcessing)
+{
+    <div style="position:fixed;top:50%;left:50%;margin-top:-50px;margin-left:-100px;">
+        <img src="images/ajax-loader.gif" />
+    </div>
+}
+else
+{
+<div class="container">
+
+
+     
+        <div class="row pb-3">
+            @foreach (var car in homeVM.CarList)
+            {
+
+
+                <div class="col-lg-3 col-sm-6 ">
+
+
+                    <div class="row p-2">
+                        <div class="col-12 p-1 h-100 ">
+
+                            <div class="card border-0 p-3 shadow  border-top border-5  rounded  ">
+
+                                <div>
+                                    @* <a href="@Url.Action("Details", "Home", new { carId = car.Id })"> *@
+                                    <img src="@car.ImageURL" class="card-img-top rounded" height="150px" width="150px" />
+
+                                    @* </a> *@
+                                </div>
+
+                                <div class="card-body pb-0">
+                                    <div>
+                                        @*<a href="@Url.Action("Details", "Home", new { carId = car.Id })">*@
+
+                                        <div class="pl-1">
+                                            <p class="card-title h5 text-dark opacity-75 text-uppercase text-center">
+
+                                                @car.Name @* @TruncateText(car.Name, 2)*@
+
+
+                                            </p>
+                                            <p class="card-title text-warning text-center">by <b>@car.Brand.BrandName</b></p>
+                                        </div>
+                                        <div class="pl-1">
+                                            <p class="text-dark text-opacity-75 text-center mb-0">
+                                                Starting Price:
+                                                <span>
+                                                    @car.StartingPrice.ToString("c")
+                                                </span>
+                                            </p>
+                                        </div>
+                                        <div class="pl-1">
+                                            <p class="text-dark text-opacity-75 text-center">
+                                                End Price:
+                                                <span>
+                                                    @car.EndPrice.ToString("c")
+                                                </span>
+                                            </p>
+                                        </div>
+                                        @* </a>*@
+                                    </div>
+                                </div>
+                                <div>
+                                   
+                                    <NavLink href="@($"details/{car.Id}")" class="btn btn-primary bg-gradient border-0 form-control">Details</NavLink>
+                                </div>
+
+
+
+
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+
+
+
+            }
+        </div>
+        
+   
+</div>
+}
+
+@code{
+    [Parameter]
+    public int brandId { get; set; }
+    public bool IsProcessing { get; set; } = false;
+    public IEnumerable<CarDTO> Cars { get; set; } = new List<CarDTO>();
+    public IEnumerable<CarTypeDTO> CarTypes { get; set; } = new List<CarTypeDTO>();
+    public IEnumerable<BrandDTO> Brands { get; set; } = new List<BrandDTO>();
+    public IEnumerable<CarImageDTO> CarImages { get; set; } = new List<CarImageDTO>();
+    private HomeVM homeVM { get; set; } = new HomeVM();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsProcessing=true;
+
+        var carlist = await _carService.GetAllAsync<APIResponse>();
+        if (carlist != null && carlist.IsSuccess)
+        {
+            var carl = JsonConvert.DeserializeObject<List<CarDTO>>(Convert.ToString(carlist.Result));
+            homeVM.CarList = carl.Where(x => x.Brand.Id == brandId).ToList();
+        }
+
+        var cartypelist = await _carTypeService.GetAllAsync<APIResponse>();
+        if (cartypelist != null && cartypelist.IsSuccess)
+        {
+            homeVM.CarTypeList = JsonConvert.DeserializeObject<List<CarTypeDTO>>(Convert.ToString(cartypelist.Result));
+        }
+        var brandlist = await _brandService.GetAllAsync<APIResponse>();
+        if (brandlist != null && brandlist.IsSuccess)
+        {
+            homeVM.BrandList = JsonConvert.DeserializeObject<List<BrandDTO>>(Convert.ToString(brandlist.Result));
+        }
+        var carimagelist = await _carImageService.GetAllAsync<APIResponse>();
+        if (carimagelist != null && carimagelist.IsSuccess)
+        {
+            homeVM.CarImagelist = JsonConvert.DeserializeObject<List<CarImageDTO>>(Convert.ToString(brandlist.Result));
+        }
+
+
+        IsProcessing=false;
+    }
+}

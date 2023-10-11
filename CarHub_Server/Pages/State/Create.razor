@@ -1,0 +1,36 @@
+﻿@page "/state/create"@using CarHub_Server.Helper;
+@inject IJSRuntime _jsRuntime@inject IStateService _stateService@inject ICountryService _countryService@inject NavigationManager _navigationManager<div class="row my-2">    <h3 class="card-title text-primary mb-3 ml-3">Create State</h3>    <div class="col-10">        @if (IsLoading)        {            <div class="text-center">                <img src="/images/loading.gif">            </div>        }        else        {            <EditForm Model="State" OnValidSubmit="StateCreate">                <DataAnnotationsValidator />                @*<ValidationSummary/>*@                <div class="form-group">                    <label>State Name</label>                    <InputText @bind-Value="State.StateName" class="form-control"></InputText>                    <ValidationMessage For="()=>State.StateName"></ValidationMessage>                </div>                <div class="form-group col-6">                    <label>State</label>                    <InputSelect @bind-Value="State.CountryId" class="form-select">                        <option value="0" disabled="disabled" selected>--Select Country--</option>                        @foreach (var cat in CountryList)                        {                            <option value="@cat.Id">@cat.CountryName</option>                        }                    </InputSelect>                    <ValidationMessage For="()=>State.CountryId"></ValidationMessage>                </div>                <div class="form-group col-6">                    <div class="form-check">                        <InputCheckbox @bind-Value="State.IsActive" class="form-check-input" checked></InputCheckbox>                        <label class="form-check-label">Is Active</label>                    </div>                </div>                       @* <div class="form-group col-6">                    <div class="form-check">                        <InputCheckbox @bind-Value="Brand.IsActive" class="form-check-input" checked></InputCheckbox>                        <label class="form-check-label">Is Active</label>                    </div>                </div> *@                <div class="form-group py-2">                    <button class="btn btn-primary">Create</button>                    <NavLink href="state" class="btn btn-secondary">Back to Index</NavLink>                </div>            </EditForm>        }    </div></div>@code{    [Parameter]    public int Id { get; set; }    private StateCreateDTO State { get; set; } = new StateCreateDTO();
+    private List<CountryDTO> CountryList { get; set; } = new List<CountryDTO>();    public bool IsLoading { get; set; }    protected override async Task OnAfterRenderAsync(bool firstRender)    {        if (firstRender)        {
+            await LoadData();        }    }
+
+
+    private async Task LoadData()    {
+        IsLoading = true;
+        StateHasChanged();
+
+        var response = await _countryService.GetAllAsync<APIResponse>();
+        if (response != null && response.IsSuccess)
+        {
+            CountryList = JsonConvert.DeserializeObject<List<CountryDTO>>(Convert.ToString(response.Result));
+        }
+
+
+        IsLoading = false;
+        StateHasChanged();            }
+    private async Task StateCreate()
+    {
+        var response = await _stateService.CreateAsync<APIResponse>(State);
+        if (response != null && response.IsSuccess)
+        {
+            await _jsRuntime.ToastrSuccess("State Create Sucessfully.");
+            _navigationManager.NavigateTo("state");
+        }
+        else
+        {
+            if (response.ErrorMessages.Count > 0)
+            {
+                await _jsRuntime.ToastrError(response.ErrorMessages.FirstOrDefault());
+            }
+        }
+
+    }}

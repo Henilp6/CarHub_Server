@@ -1,0 +1,118 @@
+﻿@page "/feature/edit/{id:int}"
+@using CarHub_Server.Helper;
+@inject IFeatureService _featureService
+@inject IFeatureTypeService _featureTypeService
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _jsRuntime
+
+
+<div class="row my-2">
+    <h3 class="card-title text-primary mb-3 ml-3">Update Car</h3>
+
+    <div class="col-10">
+        @if (IsLoading)
+        {
+            <div class="text-center">
+                <img src="/images/loading.gif">
+            </div>
+        }
+        else
+        {
+            <EditForm Model="Feature" OnValidSubmit="FeatureUpdate">
+                <DataAnnotationsValidator />
+                @*<ValidationSummary/>*@
+                <div class="form-group">
+                    <label>Feature Name</label>
+                    <InputText @bind-Value="Feature.Name" class="form-control"></InputText>
+                    <ValidationMessage For="()=>Feature.Name"></ValidationMessage>
+                </div>
+
+
+
+
+                <div class="form-group col-6">
+                    <label>FeatureType</label>
+                    <InputSelect @bind-Value="Feature.FeatureTypeId" class="form-select">
+                        <option value="0" disabled="disabled" selected>--Select FeatureType--</option>
+                        @foreach (var brand in FeatureTypes)
+                        {
+                            <option value="@brand.Id">@brand.FeatureTypeName</option>
+                        }
+
+                    </InputSelect>by
+                    <ValidationMessage For="()=>Feature.FeatureTypeId"></ValidationMessage>
+                </div>
+               
+                <div class="form-group py-2">
+                    <button class="btn btn-primary">Update</button>
+                    <NavLink href="feature" class="btn btn-secondary">Back to Index</NavLink>
+                </div>
+            </EditForm>
+        }
+    </div>
+   
+</div>
+
+@code
+{
+    [Parameter]
+    public int Id { get; set; }
+
+    private FeatureUpdateDTO Feature { get; set; } = new FeatureUpdateDTO();
+
+    private IEnumerable<FeatureTypeDTO> FeatureTypes { get; set; } = new List<FeatureTypeDTO>();
+
+    // private CountryDTO CountryDTO { get; set; } = new CountryDTO();
+    public bool IsLoading { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadFeature();
+        }
+    }
+    private async Task LoadFeature()
+    {
+        IsLoading = true;
+        StateHasChanged();
+        var response = await _featureService.GetAsync<APIResponse>(Id);
+        if (response != null && response.IsSuccess)
+        {
+            Feature = JsonConvert.DeserializeObject<FeatureUpdateDTO>(Convert.ToString(response.Result));
+        }
+        var response2 = await _featureTypeService.GetAllAsync<APIResponse>();
+        if (response2 != null && response2.IsSuccess)
+        {
+            FeatureTypes = JsonConvert.DeserializeObject<List<FeatureTypeDTO>>(Convert.ToString(response2.Result));
+        }
+       
+
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+
+    private async Task FeatureUpdate()
+    {
+        var response = await _featureService.UpdateAsync<APIResponse>(Feature);
+        if (response != null && response.IsSuccess)
+        {
+            await _jsRuntime.ToastrSuccess("Feature Update sucessfully.");
+            _navigationManager.NavigateTo("car");
+        }
+        else
+        {
+            if (response.ErrorMessages.Count > 0)
+            {
+                await _jsRuntime.ToastrError(response.ErrorMessages.FirstOrDefault());
+            }
+        }
+
+    }
+
+
+    
+
+
+}

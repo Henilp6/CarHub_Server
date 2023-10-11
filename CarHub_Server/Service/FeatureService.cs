@@ -18,58 +18,53 @@ namespace CarHub_Server.Service
 
         }
 
-        public Task<T> CreateAsync<T>(FeatureCreateDTO dto, string token)
+        public Task<T> CreateAsync<T>(FeatureCreateDTO dto)
         {
             return SendAsync<T>(new APIRequest()
             {
                 ApiType = SD.ApiType.POST,
                 Data = dto,
-                Url = carUrl + "/api/v1/FeatureAPI/CreateFeature",
-                Token = token
+                Url = carUrl + "/api/v1/FeatureAPI/CreateFeature"
             });
         }
 
-        public Task<T> DeleteAsync<T>(int id, string token)
+        public Task<T> DeleteAsync<T>(int id)
         {
             return SendAsync<T>(new APIRequest()
             {
                 ApiType = SD.ApiType.DELETE,
-                Url = carUrl + "/api/v1/FeatureAPI/DeleteFeature/" + id,
-                Token = token
+                Url = carUrl + "/api/v1/FeatureAPI/DeleteFeature/" + id
             });
         }
 
-        public Task<T> GetAllAsync<T>(string token)
+        public Task<T> GetAllAsync<T>()
         {
             return SendAsync<T>(new APIRequest()
             {
                 ApiType = SD.ApiType.GET,
-                Url = carUrl + "/api/v1/FeatureAPI/GetFeatures",
-                Token = token
+                Url = carUrl + "/api/v1/FeatureAPI/GetFeatures"
             });
         }
 
-        public Task<T> GetAsync<T>(int id, string token)
+        public Task<T> GetAsync<T>(int id)
         {
             return SendAsync<T>(new APIRequest()
             {
                 ApiType = SD.ApiType.GET,
-                Url = carUrl + "/api/v1/FeatureAPI/GetFeature/" + id,
-                Token = token
+                Url = carUrl + "/api/v1/FeatureAPI/GetFeature/" + id
             });
         }
 
-        public Task<T> UpdateAsync<T>(FeatureUpdateDTO dto, string token)
+        public Task<T> UpdateAsync<T>(FeatureUpdateDTO dto)
         {
             return SendAsync<T>(new APIRequest()
             {
                 ApiType = SD.ApiType.PUT,
                 Data = dto,
-                Url = carUrl + "/api/v1/FeatureAPI/UpdateFeature/" + dto.Id,
-                Token = token
+                Url = carUrl + "/api/v1/FeatureAPI/UpdateFeature/" + dto.Id
             });
         }
-		public Task<T> AllDataAsync<T>(string term, string orderBy, int currentPage, string token)
+		public Task<T> AllDataAsync<T>(string term, string orderBy, int currentPage)
 		{
 			//string apiUrl = $"{carUrl}/api/v1/StateAPI/GetStatesData/{Id}/{search}/{pageSize}/{pageNumber}";
 			string apiUrl = $"{carUrl}/api/v1/FeatureAPI/GetFeatureData?term={term}&orderBy={orderBy}&currentPage={currentPage}";
@@ -77,8 +72,7 @@ namespace CarHub_Server.Service
 			return SendAsync<T>(new APIRequest()
 			{
 				ApiType = SD.ApiType.GET,
-				Url = apiUrl,
-				Token = token
+				Url = apiUrl
 			});
 
 		}

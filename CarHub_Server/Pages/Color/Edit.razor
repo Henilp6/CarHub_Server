@@ -1,0 +1,93 @@
+﻿@page "/color/edit/{id:int}"
+@using CarHub_Server.Helper;
+@inject IColorService _colorService
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _jsRuntime
+@attribute [Authorize]
+
+
+<div class="row my-2">
+    <h3 class="card-title text-primary mb-3 ml-3">Update Color</h3>
+
+    <div class="col-10">
+        @if (IsLoading)
+        {
+            <div class="text-center">
+                <img src="/images/loading.gif">
+            </div>
+        }
+        else
+        {
+            <EditForm Model="Color" OnValidSubmit="ColorUpdate">
+                <DataAnnotationsValidator />
+                @*<ValidationSummary/>*@
+                <div class="form-group">
+                    <label>Color Name</label>
+                    <InputText @bind-Value="Color.ColorName" class="form-control"></InputText>
+                    <ValidationMessage For="()=>Color.ColorName"></ValidationMessage>
+                </div>
+          
+                <div class="form-group py-2">
+                    <button class="btn btn-primary">Update</button>
+                    <NavLink href="color" class="btn btn-secondary">Back to Index</NavLink>
+                </div>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code
+{
+    [Parameter]
+    public int Id { get; set; }
+
+    private ColorUpdateDTO Color { get; set; } = new ColorUpdateDTO();
+    // private CountryDTO CountryDTO { get; set; } = new CountryDTO();
+    public bool IsLoading { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadColor();
+        }
+    }
+    private async Task LoadColor()
+    {
+        IsLoading = true;
+        StateHasChanged();
+        var response = await _colorService.GetAsync<APIResponse>(Id);
+        if (response != null && response.IsSuccess)
+        {
+            Color = JsonConvert.DeserializeObject<ColorUpdateDTO>(Convert.ToString(response.Result));
+        }
+
+
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+
+    private async Task ColorUpdate()
+    {
+        var response = await _colorService.UpdateAsync<APIResponse>(Color);
+        if (response != null && response.IsSuccess)
+        {
+            await _jsRuntime.ToastrSuccess("Color Update sucessfully.");
+            _navigationManager.NavigateTo("color");
+        }
+        else
+        {
+            if (response.ErrorMessages.Count > 0)
+            {
+                await _jsRuntime.ToastrError(response.ErrorMessages.FirstOrDefault());
+            }
+        }
+
+    }
+
+
+
+
+
+}

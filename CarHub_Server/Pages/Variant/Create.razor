@@ -1,0 +1,146 @@
+﻿@page "/variant/create/{id:int}"
+@using CarHub_Server.Helper;
+@inject ICarService _carService
+@inject IVariantService _variantService
+@inject ICarTypeService _carTypeService
+@inject ICarUpload _carUpload
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _jsRuntime
+@inject IMapper _mapper
+@attribute [Authorize]
+
+<div class="row my-2">
+    <h3 class="card-title text-primary mb-3 ml-3">Create @Cars.Name Variant</h3>
+ 
+    <div class="col-10">
+        @if (IsLoading)
+        {
+            <div class="text-center">
+                <img src="/images/loading.gif">
+            </div>
+        }
+        else
+        {
+            <EditForm Model="VariantCreateVM" OnValidSubmit="VariantCreate">
+                <DataAnnotationsValidator />
+                @*<ValidationSummary/>*@
+
+
+                <input hidden asp-for="Car.Id" />
+                <input hidden asp-for="Car.Name" />
+                <input hidden asp-for="Car.StartingPrice" />
+                <input hidden asp-for="Car.EndPrice" />
+                <input hidden asp-for="Car.ManufacturingYear" />
+                
+               @*  <InputText hidden="Cars.Id" ></InputText> *@
+                <div class="form-group">
+                    <label>VariantName</label>
+                    <InputText @bind-Value="VariantCreateVM.Variant.VariantName" class="form-control"></InputText>
+                    <ValidationMessage For="()=>VariantCreateVM.Variant.VariantName"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>Transmission</label>
+                    <InputText @bind-Value="VariantCreateVM.Variant.Transmission" class="form-control"></InputText>
+                    <ValidationMessage For="()=>VariantCreateVM.Variant.Transmission"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>Price</label>
+                    <InputNumber @bind-Value="VariantCreateVM.Variant.Price" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>VariantCreateVM.Variant.Price"></ValidationMessage>
+                </div>
+                
+
+                <div class="form-group py-2">
+                    <button class="btn btn-primary">Save</button>
+                    <NavLink href="car" class="btn btn-secondary">Back to Index</NavLink>
+                </div>
+            </EditForm>
+        }
+    </div>
+
+</div>
+
+@code
+{
+    [Parameter]
+    public int Id { get; set; }
+
+    private VariantCreateVM VariantCreateVM { get; set; } = new VariantCreateVM();
+
+    private CarCreateDTO Cars { get; set; } = new CarCreateDTO();
+    private VariantCreateDTO VariantDTO { get; set; } = new VariantCreateDTO();
+
+
+
+    public bool IsLoading { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadCategories();
+        }
+    }
+
+    private async Task LoadCategories()
+    {
+        IsLoading = true;
+        StateHasChanged();
+
+        // var response = await _carService.GetAsync<APIResponse>(Id);
+        // if (response != null && response.IsSuccess)
+        // {
+        //     Cars = JsonConvert.DeserializeObject<CarDTO>(Convert.ToString(response.Result));
+        // }
+
+        // var response1 = await _variantService.GetAsync<APIResponse>(Id);
+        // if (response1 != null && response1.IsSuccess)
+        // {
+        //     VariantDTO = JsonConvert.DeserializeObject<VariantDTO>(Convert.ToString(response1.Result));
+        // }
+        var response = await _carService.GetAsync<APIResponse>(Id);
+        if (response != null &&
+            response.IsSuccess)
+        {
+
+            Cars = JsonConvert.DeserializeObject<CarCreateDTO>(Convert.ToString(response.Result));
+            VariantCreateVM.Car = _mapper.Map<CarCreateDTO>(Cars);
+            // _mapper.Map<CarDTO, CarCreateDTO>(model);
+        }
+        var response1 = await _variantService.GetAsync<APIResponse>(Id);
+        if (response1 != null &&
+            response1.IsSuccess)
+        {
+
+            VariantDTO = JsonConvert.DeserializeObject<VariantCreateDTO>(Convert.ToString(response1.Result));
+             VariantCreateVM.Variant = _mapper.Map<VariantCreateDTO>(VariantDTO);
+            //_mapper.Map<VariantDTO, VariantCreateVM>(model);
+        }
+
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task VariantCreate()
+    {
+
+        var response = await _variantService.CreateAsync<APIResponse>(VariantCreateVM);
+        if (response != null && response.IsSuccess)
+        {
+            await _jsRuntime.ToastrSuccess("Variant Create Sucessfully.");
+            _navigationManager.NavigateTo("car");
+        }
+
+        else
+        {
+            if (response.ErrorMessages.Count > 0)
+            {
+                await _jsRuntime.ToastrError(response.ErrorMessages.FirstOrDefault());
+            }
+        }
+
+    }
+
+
+
+}

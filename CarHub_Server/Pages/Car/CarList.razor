@@ -46,6 +46,19 @@
                     <th>
                         CarXColor
                     </th>
+                   
+                    <th>
+                        Mileage
+                    </th>
+                    <th>
+                        Variant
+                    </th>
+                    <th>
+                        CarImage
+                    </th>
+
+
+
                     <th>
                         
                     </th>
@@ -63,7 +76,11 @@
                         <td>@item.Brand.BrandName</td>
                         <td> <NavLink href="@($"carSpecification/create/{item.Id}")" class="btn-primary btn">Add</NavLink></td>
                         <td> <NavLink href="@($"carxcolor/create/{item.Id}")" class="btn-primary btn">Add</NavLink></td>
-
+            
+                        
+                        <td> <NavLink href="@($"mileage/create/{item.Id}")" class="btn-primary btn">Mileage</NavLink></td>
+                        <td> <NavLink href="@($"variant/create/{item.Id}")" class="btn-primary btn">Variant</NavLink></td>
+                        <td> <NavLink href="@($"carimage/create/{item.Id}")" class="btn-primary btn">CarImage</NavLink></td>
 
 
                         <td>
